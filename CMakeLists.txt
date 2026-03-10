@@ -25,7 +25,11 @@ set(IMGUI_SOURCES
         ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
 )
 
-add_executable(VisualSQL main.cpp ${IMGUI_SOURCES})
+add_executable(VisualSQL main.cpp ${IMGUI_SOURCES}
+        Column.cpp
+        Column.hpp
+        Table.cpp
+        Table.hpp)
 
 target_include_directories(VisualSQL PRIVATE
         ${IMGUI_DIR}

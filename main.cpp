@@ -3,6 +3,8 @@
 #include "imgui_impl_opengl3.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include "Table.hpp"
+#include "Column.hpp"
 
 int main() {
     if (!glfwInit()) return -1;
@@ -26,6 +28,12 @@ int main() {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 130");
 
+    Table usersTable("Uzytkownicy");
+
+    usersTable.addColumn(Column("id", "INT"));
+    usersTable.addColumn(Column("email", "VARCHAR(255)"));
+    usersTable.addColumn(Column("created_at", "TIMESTAMP"));
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -36,6 +44,19 @@ int main() {
         // Nasze pierwsze okienko
         ImGui::Begin("VisualSQL Panel Sterowania");
         ImGui::Text("Witaj w VisualSQL!");
+
+        ImGui::Separator();
+
+        ImGui::Text("Tabela: %s", usersTable.getName().c_str());
+
+        for (size_t i = 0; i < usersTable.getColumns().size(); i++) {
+            Column col = usersTable.getColumns()[i];
+
+            ImGui::BulletText("%s : %s", col.getName().c_str(), col.getType().c_str());
+        }
+
+        ImGui::Separator();
+
         if (ImGui::Button("Kliknij mnie!")) {
             std::cout << "Przycisk dziala!" << std::endl;
         }
