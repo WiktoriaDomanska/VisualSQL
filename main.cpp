@@ -6,6 +6,8 @@
 #include "Table.hpp"
 #include "Column.hpp"
 #include <imgui_node_editor.h>
+#include <string>
+#include "Schema.hpp"
 namespace ed = ax::NodeEditor;
 
 int main() {
@@ -25,6 +27,7 @@ int main() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.FontGlobalScale = 1.3f;
     ImGui::StyleColorsDark();
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -40,6 +43,14 @@ int main() {
     config.SettingsFile = "VisualSQL_NodeEditor.json";
     ed::EditorContext* m_Context = ed::CreateEditor(&config);
     ed::SetCurrentEditor(m_Context);
+
+    Schema mySchema("Mój projekt VisualSQL");
+    int tableCounter = 1;
+    ed::NodeId selectedNodeId = 0;
+
+    Table startTable("Uzytkownicy");
+    startTable.addColumn(Column("id", "INT"));
+    mySchema.addTable(startTable);
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -59,7 +70,9 @@ int main() {
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("View")) {
-                ImGui::MenuItem("Prybliz");
+                if (ImGui::MenuItem("Dopasuj widok (Zoom to Fit)")) {
+                    ed::NavigateToContent();
+                }
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
@@ -81,8 +94,15 @@ int main() {
         ImGui::Text("Narzedzia");
         ImGui::Separator();
         if (ImGui::Button("+", ImVec2(40, 40))) {
-            // W przyszłości będzie tu dodana nowa tabela
+            std::string nowaNazwa = "Tabela_" + std::to_string(tableCounter);
+            tableCounter++;
+
+            Table newTable(nowaNazwa);
+            newTable.addColumn(Column("id", "INT"));
+
+            mySchema.addTable(newTable);
         }
+
         ImGui::End();
 
         ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + screenWidth - rightPanelWidth, viewport->WorkPos.y));
@@ -91,7 +111,28 @@ int main() {
         ImGui::Begin("RightPanel", nullptr, panelFlags);
         ImGui::Text("Wlasciwosci");
         ImGui::Separator();
-        ImGui::Text("Wybierz tabele..."); // Tu pojawią się detale klikniętej tabeli
+
+        if (selectedNodeId.Get() != 0) {
+            int tableIndex = selectedNodeId.Get() - 1;
+
+            if (tableIndex >= 0 && tableIndex < mySchema.getTables().size()) {
+                const Table& selectedTable = mySchema.getTables()[tableIndex];
+
+                ImGui::Text("Wybrana tabela:");
+                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", selectedTable.getName().c_str());
+
+                ImGui::Separator();
+                ImGui::Text("Lista kolumn:");
+                for (size_t i = 0; i < selectedTable.getColumns().size(); i++) {
+                    Column col = selectedTable.getColumns()[i];
+                    ImGui::BulletText("%s (%s)", col.getName().c_str(), col.getType().c_str());
+                }
+            }
+        }
+        else {
+            ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Kliknij w wezel na plotnie.");
+        }
+
         ImGui::End();
 
         ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + leftPanelWidth, viewport->WorkPos.y));
@@ -101,14 +142,30 @@ int main() {
 
         ed::Begin("My Editor", ImVec2(0.0, 0.0f));
 
-        ed::BeginNode(1);
-        ImGui::Text("Tabela: %s", usersTable.getName().c_str());
-        ImGui::Separator();
-        for (size_t i = 0; i < usersTable.getColumns().size(); i++) {
-            Column col = usersTable.getColumns()[i];
-            ImGui::Text("%s : %s", col.getName().c_str(), col.getType().c_str());
+        const std::vector<Table>& wszystkieTabele = mySchema.getTables();
+
+        for (size_t i = 0; i < wszystkieTabele.size(); i++) {
+            ed::BeginNode(i + 1);
+
+            ImGui::Text("Tabela: %s", wszystkieTabele[i].getName().c_str());
+            ImGui::Separator();
+
+            for (size_t j = 0; j < wszystkieTabele[i].getColumns().size(); j++) {
+                Column col = wszystkieTabele[i].getColumns()[j];
+                ImGui::Text("%s : %s", col.getName().c_str(), col.getType().c_str());
+            }
+
+            ed::EndNode();
         }
-        ed::EndNode();
+
+        ed::NodeId selectedNodes[1];
+        int selectedCount = ed::GetSelectedNodes(selectedNodes, 1);
+
+        if (selectedCount > 0) {
+            selectedNodeId = selectedNodes[0];
+        } else {
+            selectedNodeId = 0;
+        }
 
         ed::End();
         ImGui::End();

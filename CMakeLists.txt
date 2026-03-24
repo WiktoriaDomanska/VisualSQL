@@ -39,6 +39,8 @@ add_executable(VisualSQL main.cpp ${IMGUI_SOURCES} ${NODE_EDITOR_SOURCES}
         Column.hpp
         Table.cpp
         Table.hpp
+        Schema.cpp
+        Schema.hpp
 )
 
 target_include_directories(VisualSQL PRIVATE
