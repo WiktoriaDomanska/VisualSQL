@@ -12,3 +12,11 @@ std::string Column::getName() const {
 std::string Column::getType() const {
     return type;
 }
+
+void Column::setName(std::string newName) {
+    this->name = newName;
+}
+
+void Column::setType(std::string newType) {
+    this->type = newType;
+}

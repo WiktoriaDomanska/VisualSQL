@@ -33,12 +33,6 @@ int main() {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 130");
 
-    Table usersTable("Uzytkownicy");
-
-    usersTable.addColumn(Column("id", "INT"));
-    usersTable.addColumn(Column("email", "VARCHAR(255)"));
-    usersTable.addColumn(Column("created_at", "TIMESTAMP"));
-
     ed::Config config;
     config.SettingsFile = "VisualSQL_NodeEditor.json";
     ed::EditorContext* m_Context = ed::CreateEditor(&config);
@@ -47,10 +41,6 @@ int main() {
     Schema mySchema("Mój projekt VisualSQL");
     int tableCounter = 1;
     ed::NodeId selectedNodeId = 0;
-
-    Table startTable("Uzytkownicy");
-    startTable.addColumn(Column("id", "INT"));
-    mySchema.addTable(startTable);
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -82,8 +72,8 @@ int main() {
         float screenWidth = viewport->WorkSize.x;
         float screenHeight = viewport->WorkSize.y;
 
-        float leftPanelWidth = 60.0f;
-        float rightPanelWidth = 250.0f;
+        float leftPanelWidth = 100.0f;
+        float rightPanelWidth = 350.0f;
 
         ImGuiWindowFlags panelFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
 
@@ -116,16 +106,59 @@ int main() {
             int tableIndex = selectedNodeId.Get() - 1;
 
             if (tableIndex >= 0 && tableIndex < mySchema.getTables().size()) {
-                const Table& selectedTable = mySchema.getTables()[tableIndex];
+                Table& selectedTable = mySchema.getTablesMutable()[tableIndex];
 
                 ImGui::Text("Wybrana tabela:");
-                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", selectedTable.getName().c_str());
+
+                char nameBuffer[256];
+                strcpy(nameBuffer, selectedTable.getName().c_str());
+
+                if (ImGui::InputText("##TableName", nameBuffer, sizeof(nameBuffer))) {
+                    selectedTable.setName(nameBuffer);
+                }
 
                 ImGui::Separator();
-                ImGui::Text("Lista kolumn:");
+                ImGui::Text("Kolumny:");
+                ImGui::SameLine();
+                if (ImGui::Button("+ Dodaj kolumne")) {
+                    selectedTable.addColumn(Column("nowa_kolumna", "VARCHAR(255"));
+                }
+
+                ImGui::Separator();
+
+                const char* sqlTypes[] = {"INT", "VARCHAR(255)", "TEXT", "FLOAT", "BOOLEAN", "TIMESTAMP", "DATE"};
+
                 for (size_t i = 0; i < selectedTable.getColumns().size(); i++) {
-                    Column col = selectedTable.getColumns()[i];
-                    ImGui::BulletText("%s (%s)", col.getName().c_str(), col.getType().c_str());
+                    Column& col = selectedTable.getColumnsMutable()[i];
+
+                    ImGui::PushID(i);
+
+                    ImGui::SetNextItemWidth(120.0f);
+                    char colNameBuf[256];
+                    strcpy(colNameBuf, col.getName().c_str());
+
+                    if (ImGui::InputText("##Nazwa", colNameBuf, sizeof(colNameBuf))) {
+                        col.setName(colNameBuf);
+                    }
+
+                    ImGui::SameLine();
+
+                    ImGui::SetNextItemWidth(120.0f);
+
+                    int currentTypeIdx = -1;
+                    for (int n = 0; n < IM_ARRAYSIZE(sqlTypes); n++) {
+                        if (col.getType() == sqlTypes[n]) {
+                            currentTypeIdx = n;
+                            break;
+                        }
+                    }
+
+                    if (ImGui::Combo("##Typ", &currentTypeIdx, sqlTypes, IM_ARRAYSIZE(sqlTypes))) {
+                        if (currentTypeIdx >= 0) {
+                            col.setType(sqlTypes[currentTypeIdx]);
+                        }
+                    }
+                    ImGui::PopID();
                 }
             }
         }

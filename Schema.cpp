@@ -11,3 +11,7 @@ void Schema::addTable(const Table &table) {
 const std::vector<Table>& Schema::getTables() const {
     return tables;
 }
+
+std::vector<Table>& Schema::getTablesMutable() {
+    return tables;
+}

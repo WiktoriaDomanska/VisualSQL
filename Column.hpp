@@ -8,6 +8,9 @@ public:
     std::string getName() const;
     std::string getType() const;
 
+    void setName(std::string newName);
+    void setType(std::string newType);
+
 private:
     std::string name;
     std::string type;

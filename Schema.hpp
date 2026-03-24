@@ -14,4 +14,5 @@ public:
     void addTable(const Table& table);
 
     const std::vector<Table>& getTables() const;
+    std::vector<Table>& getTablesMutable();
 };

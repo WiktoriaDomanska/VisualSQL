@@ -15,3 +15,11 @@ std::string Table::getName() const {
 const std::vector<Column>& Table::getColumns() const {
     return columns;
 }
+
+void Table::setName(std::string newName) {
+    this->name = newName;
+}
+
+std::vector<Column>& Table::getColumnsMutable() {
+    return columns;
+}
