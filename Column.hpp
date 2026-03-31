@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "GraphElements.hpp"
 
 class Column {
 public:
@@ -11,7 +12,13 @@ public:
     void setName(std::string newName);
     void setType(std::string newType);
 
+    Pin& getInputPin();
+    Pin& getOutputPin();
+
 private:
     std::string name;
     std::string type;
+
+    Pin inputPin;
+    Pin outputPin;
 };

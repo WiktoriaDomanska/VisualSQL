@@ -8,6 +8,7 @@
 #include <imgui_node_editor.h>
 #include <string>
 #include "Schema.hpp"
+#include <algorithm>
 namespace ed = ax::NodeEditor;
 
 int main() {
@@ -41,6 +42,9 @@ int main() {
     Schema mySchema("Mój projekt VisualSQL");
     int tableCounter = 1;
     ed::NodeId selectedNodeId = 0;
+
+    std::vector<Link> wszystkieLinki; // Wektor przechowujący otworzone relacje
+    int nextLinkId = 1; // Licznik dla unikalnych id linków
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -175,7 +179,7 @@ int main() {
 
         ed::Begin("My Editor", ImVec2(0.0, 0.0f));
 
-        const std::vector<Table>& wszystkieTabele = mySchema.getTables();
+        std::vector<Table>& wszystkieTabele = mySchema.getTablesMutable();
 
         for (size_t i = 0; i < wszystkieTabele.size(); i++) {
             ed::BeginNode(i + 1);
@@ -184,12 +188,80 @@ int main() {
             ImGui::Separator();
 
             for (size_t j = 0; j < wszystkieTabele[i].getColumns().size(); j++) {
-                Column col = wszystkieTabele[i].getColumns()[j];
+                Column& col = wszystkieTabele[i].getColumnsMutable()[j];
+
+                ed::BeginPin(col.getInputPin().ID, ed::PinKind::Input);
+                ImGui::Text("->");
+                ed::EndPin();
+
+                ImGui::SameLine();
+
                 ImGui::Text("%s : %s", col.getName().c_str(), col.getType().c_str());
+
+                ImGui::SameLine();
+
+                ed::BeginPin(col.getOutputPin().ID, ed::PinKind::Output);
+                ImGui::Text("->");
+                ed::EndPin();
             }
 
             ed::EndNode();
         }
+
+        for (auto& link : wszystkieLinki) {
+            ed::Link(link.ID, link.StartPinID, link.EndPinID);
+        }
+
+        if (ed::BeginCreate()) {
+            ed::PinId startPinId, endPinId;
+
+            if (ed::QueryNewLink(&startPinId, &endPinId)) {
+                if (startPinId && endPinId) {
+                    auto FindPin = [&wszystkieTabele](ed::PinId id) -> Pin* {
+                        for (auto& table : wszystkieTabele) {
+                            for (auto& col : table.getColumnsMutable()) {
+                                if (col.getInputPin().ID == id) return &col.getInputPin();
+                                if (col.getOutputPin().ID == id) return &col.getOutputPin();
+                            }
+                        }
+                        return nullptr;
+                    };
+
+                    Pin* startPin = FindPin(startPinId);
+                    Pin* endPin = FindPin(endPinId);
+
+                    if (startPin && endPin) {
+                        if (startPin == endPin) {
+                            ed::RejectNewItem(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), 2.0f);
+                        }
+                        else if (startPin->Type == endPin->Type) {
+                            ed::RejectNewItem(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), 2.0f);
+                        }
+                        else {
+                            if (ed::AcceptNewItem(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), 2.0f)) {
+                                wszystkieLinki.push_back(Link(nextLinkId++, startPinId, endPinId));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        ed::EndCreate();
+
+        if (ed::BeginDelete()) {
+            ed::LinkId deletedLinkId;
+
+            while (ed::QueryDeletedLink(&deletedLinkId)) {
+                if (ed::AcceptDeletedItem()) {
+                    wszystkieLinki.erase(
+                        std::remove_if(wszystkieLinki.begin(), wszystkieLinki.end(),
+                            [deletedLinkId](const Link& link) { return link.ID == deletedLinkId; }),
+                            wszystkieLinki.end()
+                            );
+                }
+            }
+        }
+        ed::EndDelete();
 
         ed::NodeId selectedNodes[1];
         int selectedCount = ed::GetSelectedNodes(selectedNodes, 1);
