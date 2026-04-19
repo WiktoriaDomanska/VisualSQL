@@ -2,9 +2,9 @@
 #include <imgui_node_editor.h>
 namespace ed = ax::NodeEditor;
 
-enum class PinType {
-    Input,
-    Output
+enum class PinType { // Określamy, czy punkt zaczeoienia to wejście czy wyjscie
+    Input, // dla kluczy obcych
+    Output // dla kluczy głównych
 };
 
 struct Pin {

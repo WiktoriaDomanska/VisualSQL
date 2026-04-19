@@ -9,6 +9,7 @@
 #include <string>
 #include "Schema.hpp"
 #include <algorithm>
+#include "SqlGenerator.hpp"
 namespace ed = ax::NodeEditor;
 
 int main() {
@@ -46,6 +47,9 @@ int main() {
     std::vector<Link> wszystkieLinki; // Wektor przechowujący otworzone relacje
     int nextLinkId = 1; // Licznik dla unikalnych id linków
 
+    std::string generatedSql = "";
+    bool showSqlModal = false;
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -66,6 +70,13 @@ int main() {
             if (ImGui::BeginMenu("View")) {
                 if (ImGui::MenuItem("Dopasuj widok (Zoom to Fit)")) {
                     ed::NavigateToContent();
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Generate")) {
+                if (ImGui::MenuItem("Generate SQL Code")) {
+                    generatedSql = SqlGenerator::generateSchemaSql(mySchema, wszystkieLinki);
+                    showSqlModal = true;
                 }
                 ImGui::EndMenu();
             }
@@ -163,6 +174,13 @@ int main() {
                         }
                     }
                     ImGui::PopID();
+
+                    ImGui::SameLine();
+
+                    bool isPK = col.getIsPrimaryKey();
+                    if (ImGui::Checkbox("PK", &isPK)) {
+                        col.setIsPrimaryKey(isPK);
+                    }
                 }
             }
         }
@@ -196,7 +214,8 @@ int main() {
 
                 ImGui::SameLine();
 
-                ImGui::Text("%s : %s", col.getName().c_str(), col.getType().c_str());
+                std::string pkText = col.getIsPrimaryKey() ? " (PK)" : "";
+                ImGui::Text("%s%s : %s", col.getName().c_str(), pkText.c_str(), col.getType().c_str());
 
                 ImGui::SameLine();
 
@@ -231,14 +250,26 @@ int main() {
                     Pin* endPin = FindPin(endPinId);
 
                     if (startPin && endPin) {
+                        bool linkAlreadyExists = false;
+                        for (const auto& link : wszystkieLinki) {
+                            if ((link.StartPinID == startPinId && link.EndPinID == endPinId) ||
+                                (link.StartPinID == endPinId && link.EndPinID == startPinId)) {
+                                linkAlreadyExists = true;
+                                break;
+                            }
+                        }
+
                         if (startPin == endPin) {
                             ed::RejectNewItem(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), 2.0f);
                         }
-                        else if (startPin->Type == endPin->Type) {
+                        else if (startPin -> Type == endPin -> Type) {
+                            ed::RejectNewItem(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), 2.0f);
+                        }
+                        else if (linkAlreadyExists) {
                             ed::RejectNewItem(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), 2.0f);
                         }
                         else {
-                            if (ed::AcceptNewItem(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), 2.0f)) {
+                            if (ed::AcceptNewItem(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), 2.0f)) {
                                 wszystkieLinki.push_back(Link(nextLinkId++, startPinId, endPinId));
                             }
                         }
@@ -274,6 +305,19 @@ int main() {
 
         ed::End();
         ImGui::End();
+
+        if (showSqlModal) {
+            ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_FirstUseEver);
+            if (ImGui::Begin("Wygenerowany kod SQL", &showSqlModal)) {
+                ImGui::InputTextMultiline("##sql_output", (char*)generatedSql.c_str(), generatedSql.size(),
+                    ImVec2(-FLT_MIN, -FLT_MIN), ImGuiInputTextFlags_ReadOnly);
+
+                if (ImGui::Button("Zamknij")) {
+                    showSqlModal = false;
+                }
+            }
+            ImGui::End();
+        }
 
         ImGui::Render();
 

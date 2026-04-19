@@ -4,7 +4,7 @@
 
 class Column {
 public:
-    Column(std::string name, std::string type);
+    Column(std::string name, std::string type, bool isPrimaryKey = false);
 
     std::string getName() const;
     std::string getType() const;
@@ -15,9 +15,15 @@ public:
     Pin& getInputPin();
     Pin& getOutputPin();
 
+    const Pin& getInputPin() const;
+    const Pin& getOutputPin() const;
+
+    bool getIsPrimaryKey() const;
+    void setIsPrimaryKey(bool isPK);
 private:
     std::string name;
     std::string type;
+    bool isPrimaryKey;
 
     Pin inputPin;
     Pin outputPin;
