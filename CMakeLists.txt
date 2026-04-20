@@ -14,6 +14,13 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(glfw)
 
+FetchContent_Declare(
+        json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.11.3
+)
+FetchContent_MakeAvailable(json)
+
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs/imgui)
 
 set(NODE_EDITOR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs/imgui-node-editor)
@@ -44,6 +51,8 @@ add_executable(VisualSQL main.cpp ${IMGUI_SOURCES} ${NODE_EDITOR_SOURCES}
         GraphElements.hpp
         SqlGenerator.cpp
         SqlGenerator.hpp
+        ProjectSerializer.cpp
+        ProjectSerializer.hpp
 )
 
 target_include_directories(VisualSQL PRIVATE
@@ -52,4 +61,4 @@ target_include_directories(VisualSQL PRIVATE
         ${NODE_EDITOR_DIR}
 )
 
-target_link_libraries(VisualSQL PRIVATE glfw opengl32)
+target_link_libraries(VisualSQL PRIVATE glfw opengl32 nlohmann_json::nlohmann_json comdlg32)

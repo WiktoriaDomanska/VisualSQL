@@ -10,7 +10,46 @@
 #include "Schema.hpp"
 #include <algorithm>
 #include "SqlGenerator.hpp"
+#include "ProjectSerializer.hpp"
+#include "GLFW/glfw3native.h"
+#define NOMINMAX
+#include <windows.h>
+#include <commdlg.h>
 namespace ed = ax::NodeEditor;
+
+std::string openSaveFileDialog() {
+    char filename[MAX_PATH] = {0};
+    OPENFILENAMEA ofn;
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = NULL;
+    ofn.lpstrFilter = "Pliki JSON (*.json)\0*.json\0Wszystkie pliki (*.*)\0*.*\0";
+    ofn.lpstrFile = filename;
+    ofn.lpstrFile = filename;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
+    ofn.lpstrDefExt = "json";
+
+    if (GetSaveFileNameA(&ofn)) return std::string(filename);
+    return "";
+}
+
+std::string openLoadFileDialog() {
+    char filename[MAX_PATH] = {0};
+    OPENFILENAMEA ofn;
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = NULL;
+    ofn.lpstrFilter = "Pliki JSON (*.json)\0*.json\0Wszystkie pliki (*.*)\0*.*\0";
+    ofn.lpstrFile = filename;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+    ofn.lpstrDefExt = "json";
+
+    if (GetOpenFileNameA(&ofn)) return std::string(filename);
+    return "";
+}
+
 
 int main() {
     if (!glfwInit()) return -1;
@@ -59,7 +98,28 @@ int main() {
 
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
-                ImGui::MenuItem("Zapisz", "Ctrl+S");
+
+                if (ImGui::MenuItem("Zapisz", "Ctrl+S")) {
+                    std::string filepath = openSaveFileDialog();
+                    if (!filepath.empty()) {
+                        bool success = ProjectSerializer::saveToFile(mySchema, filepath);
+                        if (success) {
+                            std::cout << "Zapisano do: " << filepath << std::endl;
+                        }
+                    }
+                }
+
+                if (ImGui::MenuItem("Wczytaj", "Ctrl+O")) {
+                    std::string filepath = openLoadFileDialog();
+                    if (!filepath.empty()) {
+                        bool success = ProjectSerializer::loadFromFile(mySchema, filepath);
+                        if (success) {
+                            wszystkieLinki.clear();
+                            std::cout << "Wczytano z: " << filepath << std::endl;
+                        }
+                    }
+                }
+
                 ImGui::MenuItem("Zakoncz");
                 ImGui::EndMenu();
             }
