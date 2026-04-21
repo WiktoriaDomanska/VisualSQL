@@ -102,7 +102,7 @@ int main() {
                 if (ImGui::MenuItem("Zapisz", "Ctrl+S")) {
                     std::string filepath = openSaveFileDialog();
                     if (!filepath.empty()) {
-                        bool success = ProjectSerializer::saveToFile(mySchema, filepath);
+                        bool success = ProjectSerializer::saveToFile(mySchema, wszystkieLinki, filepath);
                         if (success) {
                             std::cout << "Zapisano do: " << filepath << std::endl;
                         }
@@ -112,9 +112,8 @@ int main() {
                 if (ImGui::MenuItem("Wczytaj", "Ctrl+O")) {
                     std::string filepath = openLoadFileDialog();
                     if (!filepath.empty()) {
-                        bool success = ProjectSerializer::loadFromFile(mySchema, filepath);
+                        bool success = ProjectSerializer::loadFromFile(mySchema, wszystkieLinki, filepath);
                         if (success) {
-                            wszystkieLinki.clear();
                             std::cout << "Wczytano z: " << filepath << std::endl;
                         }
                     }
