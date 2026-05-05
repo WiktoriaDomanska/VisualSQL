@@ -53,6 +53,8 @@ add_executable(VisualSQL main.cpp ${IMGUI_SOURCES} ${NODE_EDITOR_SOURCES}
         SqlGenerator.hpp
         ProjectSerializer.cpp
         ProjectSerializer.hpp
+        SqlTypes.cpp
+        SqlTypes.hpp
 )
 
 target_include_directories(VisualSQL PRIVATE

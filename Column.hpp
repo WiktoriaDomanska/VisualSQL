@@ -9,6 +9,9 @@ public:
     std::string getName() const;
     std::string getType() const;
 
+    int getLength() const;
+    void setLength(int newLength);
+
     void setName(std::string newName);
     void setType(std::string newType);
 
@@ -20,9 +23,11 @@ public:
 
     bool getIsPrimaryKey() const;
     void setIsPrimaryKey(bool isPK);
+
 private:
     std::string name;
     std::string type;
+    int length;
     bool isPrimaryKey;
 
     Pin inputPin;

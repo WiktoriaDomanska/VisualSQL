@@ -18,7 +18,7 @@ PinOwner findPinOwner(const Schema& schema, ax::NodeEditor::PinId id) {
     return { nullptr, nullptr};
 }
 
-std::string SqlGenerator::generateSchemaSql(const Schema &schema, const std::vector<Link>& links) {
+std::string SqlGenerator::generateSchemaSql(const Schema &schema, const std::vector<Link>& links, const std::map<std::string, std::vector<SqlTypeDefinition>>& types) {
     std::stringstream ss;
 
     for (const auto& table : schema.getTables()) {
@@ -42,6 +42,20 @@ std::string SqlGenerator::generateSchemaSql(const Schema &schema, const std::vec
         const auto& columns = table.getColumns();
         for (size_t i = 0; i < columns.size(); ++i) {
             ss << "    " << columns[i].getName() << " " << columns[i].getType();
+
+            bool requiresLength = false;
+            for (const auto& [category, typesList] : types) {
+                for (const auto& t : typesList) {
+                    if (t.name == columns[i].getType()) {
+                        requiresLength = t.hasLength;
+                        break;
+                    }
+                }
+            }
+
+            if (requiresLength) {
+                ss << "(" << columns[i].getLength() << ")";
+            }
 
             if (columns[i].getIsPrimaryKey()) {
                 ss << " PRIMARY KEY";

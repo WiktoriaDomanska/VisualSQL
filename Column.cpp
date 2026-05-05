@@ -3,7 +3,7 @@
 static int nextPinId = 100;
 
 Column::Column(std::string name, std::string type, bool isPrimaryKey)
-    : name(std::move(name)), type(std::move(type)), isPrimaryKey(isPrimaryKey),
+    : name(std::move(name)), type(std::move(type)), length(255), isPrimaryKey(isPrimaryKey),
 inputPin(nextPinId++, PinType::Input),
 outputPin(nextPinId++, PinType::Output)
 {
@@ -47,4 +47,12 @@ const Pin& Column::getInputPin() const {
 
 const Pin& Column::getOutputPin() const {
     return outputPin;
+}
+
+int Column::getLength() const {
+    return length;
+}
+
+void Column::setLength(int newLength) {
+    this->length = newLength;
 }

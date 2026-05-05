@@ -5,7 +5,8 @@
 
 class Table {
 public:
-    Table(std::string name);
+    Table(int id, std::string name);
+    int getId() const;
 
     void setName(std::string newName);
     void addColumn(const Column& column);
@@ -16,6 +17,7 @@ public:
     std::vector<Column>& getColumnsMutable();
 
 private:
+    int id;
     std::string name;
     std::vector<Column> columns;
 };

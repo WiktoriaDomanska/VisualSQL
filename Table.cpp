@@ -1,6 +1,6 @@
 #include "Table.hpp"
 
-Table::Table(std::string name) : name(std::move(name)) {
+Table::Table(int id, std::string name) : id(id), name(std::move(name)) {
 
 }
 
@@ -22,4 +22,8 @@ void Table::setName(std::string newName) {
 
 std::vector<Column>& Table::getColumnsMutable() {
     return columns;
+}
+
+int Table::getId() const {
+    return id;
 }

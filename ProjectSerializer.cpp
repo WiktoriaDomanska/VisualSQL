@@ -47,7 +47,7 @@ bool ProjectSerializer::saveToFile(const Schema &schema, const std::vector<Link>
     }
 }
 
-bool ProjectSerializer::loadFromFile(Schema &schema, std::vector<Link>& links, const std::string& filepath) {
+bool ProjectSerializer::loadFromFile(Schema &schema, std::vector<Link>& links, const std::string& filepath, int& nextTableId) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
         std::cerr << "Blad: Nie udalo sie otworzyc pliku" << filepath << std::endl;
@@ -64,7 +64,7 @@ bool ProjectSerializer::loadFromFile(Schema &schema, std::vector<Link>& links, c
     if (j.contains("tables") && j["tables"].is_array()) {
 
         for (const auto& jTable : j["tables"]) {
-            Table table(jTable["name"].get<std::string>());
+            Table table(nextTableId++, jTable["name"].get<std::string>());
 
             if (jTable.contains("columns") && jTable["columns"].is_array()) {
                 for (const auto& jCol : jTable["columns"]) {
