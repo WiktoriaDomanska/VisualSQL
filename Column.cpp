@@ -56,3 +56,12 @@ int Column::getLength() const {
 void Column::setLength(int newLength) {
     this->length = newLength;
 }
+
+bool Column::getIsNotNull() const { return isNotNull; }
+void Column::setIsNotNull(bool isNN) { this->isNotNull = isNN; }
+
+bool Column::getIsUnique() const { return isUnique; }
+void Column::setIsUnique(bool isUQ) { this->isUnique = isUQ; }
+
+bool Column::getIsAutoIncrement() const { return isAutoIncrement; }
+void Column::setIsAutoIncrement(bool isAI) { this->isAutoIncrement = isAI; }

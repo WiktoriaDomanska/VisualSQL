@@ -21,6 +21,9 @@
 #include <map>
 #include "SqlTypes.hpp"
 namespace ed = ax::NodeEditor;
+#include "MySqlGenerator.hpp"
+#include "PostgreSqlGenerator.hpp"
+#include <memory>
 
 // Otwarcie okienka Windows do zapisywania pliku
 std::string openSaveFileDialog() {
@@ -143,6 +146,7 @@ int main() {
 
     std::string generatedSql = "";
     bool showSqlModal = false;
+    int selectedSqlEngine = 0; // 0 = MySQL, 1 = PostgreSQL
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -205,9 +209,24 @@ int main() {
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Generate")) {
+                ImGui::TextDisabled("Wybierz silnik bazy:");
+                ImGui::RadioButton("MySQL", &selectedSqlEngine, 0);
+                ImGui::RadioButton("PostgreSQL", &selectedSqlEngine, 1);
+
+                ImGui::Separator();
+
                 if (ImGui::MenuItem("Generate SQL Code")) {
-                    // Wywołanie zewnętrznej klasy do tłumaczenia grafu na język bazy danych
-                    generatedSql = SqlGenerator::generateSchemaSql(mySchema, wszystkieLinki, availableSqlTypes);
+                    // Tworzymy wskaźnik na nasz Interfejs
+                    std::unique_ptr<ISqlGenerator> generator;
+
+                    // W zależności od wyboru w UI, wstrzykujemy konkretną klasę
+                    if (selectedSqlEngine == 0) {
+                        generator = std::make_unique<MySqlGenerator>();
+                    } else if (selectedSqlEngine == 1) {
+                        generator = std::make_unique<PostgreSqlGenerator>();
+                    }
+
+                    generatedSql = generator->generateSchemaSql(mySchema, wszystkieLinki, availableSqlTypes);
                     showSqlModal = true;
                 }
                 ImGui::EndMenu();
@@ -356,6 +375,24 @@ int main() {
                     bool isPK = col.getIsPrimaryKey();
                     if (ImGui::Checkbox("PK", &isPK)) {
                         col.setIsPrimaryKey(isPK);
+                    }
+
+                    ImGui::SameLine();
+                    bool isAI = col.getIsAutoIncrement();
+                    if (ImGui::Checkbox("AI", &isAI)) {
+                        col.setIsAutoIncrement(isAI);
+                    }
+
+                    ImGui::SameLine();
+                    bool isNN = col.getIsNotNull();
+                    if (ImGui::Checkbox("NN", &isNN)) {
+                        col.setIsNotNull(isNN);
+                    }
+
+                    ImGui::SameLine();
+                    bool isUQ = col.getIsUnique();
+                    if (ImGui::Checkbox("UQ", &isUQ)) {
+                        col.setIsUnique(isUQ);
                     }
                 }
             }
