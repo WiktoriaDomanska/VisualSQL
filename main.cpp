@@ -106,6 +106,8 @@ int main() {
     int nextTableId = 1; // Unikalne ID tabeli
     ed::NodeId selectedNodeId = 0; // Przechowuje ID klikniętej przez użytkownika tabeli
     int newTableIdToPlace = 0; // Zmienna pomocnicza wymuszająca pozycję nowej tabeli na środku
+    ed::NodeId previousSelectedNodeId = 0; // Pamięta poprzednio wybraną tabelę
+    int selectedColumnIndex = -1; // Pamięta indeks klikniętej kolumny (-1 to brak wyboru)
 
     std::vector<Link> wszystkieLinki; // Wektor przechowujący wszystkie narysowane strzałki (relacje)
     int nextLinkId = 1; // Licznik dla unikalnych id linków
@@ -277,7 +279,13 @@ int main() {
 
         // Jeśli kliknięto jakąś tabelę na płótnie
         if (selectedNodeId.Get() != 0) {
-            // Wyszukanie w pamięci oryginalnej tabeli po jej ID
+
+            // Jeśli kliknęliśmy w inną tabelę niż wcześniej, resetujemy wybór kolumny
+            if (selectedNodeId != previousSelectedNodeId) {
+                selectedColumnIndex = -1;
+                previousSelectedNodeId = selectedNodeId;
+            }
+
             auto it = std::find_if(mySchema.getTablesMutable().begin(), mySchema.getTablesMutable().end(),
                 [selectedNodeId](const Table& t) { return t.getId() == selectedNodeId.Get(); });
 
@@ -285,11 +293,8 @@ int main() {
                 Table& selectedTable = *it;
 
                 ImGui::Text("Wybrana tabela:");
-
                 char nameBuffer[256];
                 strcpy(nameBuffer, selectedTable.getName().c_str());
-
-                // Jeśli użytkownik wpisze nową nazwę, od razu zapisz ją w obiekcie Table
                 if (ImGui::InputText("##TableName", nameBuffer, sizeof(nameBuffer))) {
                     selectedTable.setName(nameBuffer);
                 }
@@ -298,102 +303,104 @@ int main() {
                 ImGui::Text("Kolumny:");
                 ImGui::SameLine();
                 if (ImGui::Button("+ Dodaj kolumne")) {
-                    selectedTable.addColumn(Column("nowa_kolumna", "VARCHAR"));
+                    selectedTable.addColumn(Column("nowa_kolumna", "INT"));
+                    // Po dodaniu nowej kolumny, automatycznie ją zaznaczamy do edycji
+                    selectedColumnIndex = selectedTable.getColumns().size() - 1;
                 }
+
+                // Lista kolumn
+                // Tworzymy małe, wydzielone okienko o sztywnym rozmiarze
+                ImGui::BeginChild("ColumnList", ImVec2(0, 150), true);
+                for (size_t i = 0; i < selectedTable.getColumns().size(); i++) {
+                    Column& col = selectedTable.getColumnsMutable()[i];
+
+                    // Budujemy etykietę, np.: "id (INT) [PK]"
+                    std::string label = col.getName() + " (" + col.getType() + ")";
+                    if (col.getIsPrimaryKey()) label += " [PK]";
+
+                    // Sprawdzamy czy ta linijka jest aktualnie zaznaczona
+                    bool isSelected = (selectedColumnIndex == static_cast<int>(i));
+
+                    if (ImGui::Selectable(label.c_str(), isSelected)) {
+                        selectedColumnIndex = i; // Zapisujemy, którą kolumnę kliknięto
+                    }
+                }
+                ImGui::EndChild();
 
                 ImGui::Separator();
 
-                // Pętla renderująca interfejs do edycji kolumn
-                for (size_t i = 0; i < selectedTable.getColumns().size(); i++) {
-                    Column& col = selectedTable.getColumnsMutable()[i]; // Używamy Mutable, żeby móc edytować!
+                // Wyświetlamy go tylko, jeśli jakaś kolumna jest kliknięta (index >= 0)
+                if (selectedColumnIndex >= 0 && selectedColumnIndex < selectedTable.getColumns().size()) {
 
-                    ImGui::PushID(i); // Dodane 'i', żeby ImGui wiedziało, która to kolumna
+                    // Bierzemy referencję tylko tej jednej wybranej kolumny
+                    Column& col = selectedTable.getColumnsMutable()[selectedColumnIndex];
 
-                    ImGui::SetNextItemWidth(100.0f);
+                    ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "Wlasciwosci: %s", col.getName().c_str());
+
+                    // Zmiana nazwy
+                    ImGui::Text("Nazwa:");
                     char colNameBuf[256];
                     strcpy(colNameBuf, col.getName().c_str());
-
-                    if (ImGui::InputText("##Nazwa", colNameBuf, sizeof(colNameBuf))) {
+                    if (ImGui::InputText("##ColName", colNameBuf, sizeof(colNameBuf))) {
                         col.setName(colNameBuf);
                     }
 
-                    ImGui::SameLine();
-                    ImGui::SetNextItemWidth(100.0f);
+                    // Zmiana typu
+                    ImGui::Text("Typ danych:");
                     std::string currentType = col.getType();
-
-                    // Lista rozwijana z dynamicznym ładowaniem typów danych
-                    if (ImGui::BeginCombo("##Typ", currentType.c_str())) {
-
-                        // Przechodzimy przez wszystkie kategorie w naszym Słowniku
+                    if (ImGui::BeginCombo("##ColType", currentType.c_str())) {
                         for (const auto& [category, typesList] : availableSqlTypes) {
-
                             ImGui::TextDisabled("%s", category.c_str());
                             ImGui::Separator();
-
                             for (const auto& t : typesList) {
                                 bool is_selected = (currentType == t.name);
-
-                                ImGui::Indent(15.0f); // Wcięcie wizualne dla estetyki
-                                if (ImGui::Selectable(t.name.c_str(), is_selected)) {
-                                    col.setType(t.name);
-                                }
+                                ImGui::Indent(15.0f);
+                                if (ImGui::Selectable(t.name.c_str(), is_selected)) col.setType(t.name);
                                 ImGui::Unindent(15.0f);
-
-                                if (is_selected) {
-                                    ImGui::SetItemDefaultFocus();
-                                }
+                                if (is_selected) ImGui::SetItemDefaultFocus();
                             }
                         }
                         ImGui::EndCombo();
                     }
 
-                    // Sprawdzanie flagi hasLength dla nowego formatu danych
+                    // Długość
                     bool showLengthField = false;
                     for (const auto& [category, typesList] : availableSqlTypes) {
                         for (const auto& t : typesList) {
                             if (t.name == col.getType()) {
                                 showLengthField = t.hasLength;
-                                break; // Szybkie przerwanie pętli jeśli znaleźliśmy
+                                break;
                             }
                         }
                     }
-
-                    // Wyświetlenie pola długości
                     if (showLengthField) {
-                        ImGui::SameLine();
-                        ImGui::SetNextItemWidth(50.0f);
+                        ImGui::Text("Dlugosc znaku:");
                         int currentLen = col.getLength();
-                        if (ImGui::InputInt("##Len", &currentLen, 0)) {
+                        if (ImGui::InputInt("##ColLen", &currentLen, 0)) {
                             if (currentLen < 0) currentLen = 0;
                             col.setLength(currentLen);
                         }
                     }
 
-                    ImGui::PopID();
+                    ImGui::Separator();
 
-                    ImGui::SameLine();
+                    ImGui::Text("Atrybuty zaawansowane:");
+
                     bool isPK = col.getIsPrimaryKey();
-                    if (ImGui::Checkbox("PK", &isPK)) {
-                        col.setIsPrimaryKey(isPK);
-                    }
+                    if (ImGui::Checkbox("Klucz Glowny (PK)", &isPK)) col.setIsPrimaryKey(isPK);
 
-                    ImGui::SameLine();
                     bool isAI = col.getIsAutoIncrement();
-                    if (ImGui::Checkbox("AI", &isAI)) {
-                        col.setIsAutoIncrement(isAI);
-                    }
+                    if (ImGui::Checkbox("Auto-Inkrementacja (AI)", &isAI)) col.setIsAutoIncrement(isAI);
 
-                    ImGui::SameLine();
                     bool isNN = col.getIsNotNull();
-                    if (ImGui::Checkbox("NN", &isNN)) {
-                        col.setIsNotNull(isNN);
-                    }
+                    if (ImGui::Checkbox("Wymagane (Not Null)", &isNN)) col.setIsNotNull(isNN);
 
-                    ImGui::SameLine();
                     bool isUQ = col.getIsUnique();
-                    if (ImGui::Checkbox("UQ", &isUQ)) {
-                        col.setIsUnique(isUQ);
-                    }
+                    if (ImGui::Checkbox("Unikalne (Unique)", &isUQ)) col.setIsUnique(isUQ);
+
+                } else {
+                    // Instrukcja dla użytkownika, gdy nic nie kliknął
+                    ImGui::TextDisabled("Wybierz kolumne z listy powyzej,\naby edytowac jej wlasciwosci.");
                 }
             }
         }
