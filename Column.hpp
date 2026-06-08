@@ -33,6 +33,8 @@ public:
     bool getIsAutoIncrement() const;
     void setIsAutoIncrement(bool isAI);
 
+    void restorePins(int inId, int outId);
+
 private:
     std::string name;
     std::string type;

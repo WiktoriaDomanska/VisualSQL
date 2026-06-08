@@ -19,6 +19,12 @@ bool ProjectSerializer::saveToFile(const Schema &schema, const std::vector<Link>
             jCol["name"] = col.getName();
             jCol["type"] = col.getType();
             jCol["isPrimaryKey"] = col.getIsPrimaryKey();
+            jCol["length"] = col.getLength();
+            jCol["isAutoIncrement"] = col.getIsAutoIncrement();
+            jCol["isNotNull"] = col.getIsNotNull();
+            jCol["isUnique"] = col.getIsUnique();
+            jCol["inputPinId"] = (unsigned long long)col.getInputPin().ID.Get();
+            jCol["outputPinId"] = (unsigned long long)col.getOutputPin().ID.Get();
 
             jTable["columns"].push_back(jCol);
         }
@@ -47,7 +53,7 @@ bool ProjectSerializer::saveToFile(const Schema &schema, const std::vector<Link>
     }
 }
 
-bool ProjectSerializer::loadFromFile(Schema &schema, std::vector<Link>& links, const std::string& filepath, int& nextTableId) {
+bool ProjectSerializer::loadFromFile(Schema &schema, std::vector<Link>& links, const std::string& filepath, int& nextTableId, int& nextLinkId) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
         std::cerr << "Blad: Nie udalo sie otworzyc pliku" << filepath << std::endl;
@@ -62,7 +68,6 @@ bool ProjectSerializer::loadFromFile(Schema &schema, std::vector<Link>& links, c
     links.clear();
 
     if (j.contains("tables") && j["tables"].is_array()) {
-
         for (const auto& jTable : j["tables"]) {
             Table table(nextTableId++, jTable["name"].get<std::string>());
 
@@ -72,12 +77,20 @@ bool ProjectSerializer::loadFromFile(Schema &schema, std::vector<Link>& links, c
                         jCol["name"].get<std::string>(),
                         jCol["type"].get<std::string>(),
                         jCol["isPrimaryKey"].get<bool>()
-                        );
+                    );
+
+                    if (jCol.contains("length")) col.setLength(jCol["length"].get<int>());
+                    if (jCol.contains("isAutoIncrement")) col.setIsAutoIncrement(jCol["isAutoIncrement"].get<bool>());
+                    if (jCol.contains("isNotNull")) col.setIsNotNull(jCol["isNotNull"].get<bool>());
+                    if (jCol.contains("isUnique")) col.setIsUnique(jCol["isUnique"].get<bool>());
+
+                    if (jCol.contains("inputPinId") && jCol.contains("outputPinId")) {
+                        col.restorePins(jCol["inputPinId"].get<int>(), jCol["outputPinId"].get<int>());
+                    }
 
                     table.addColumn(col);
                 }
             }
-
             schema.addTable(table);
         }
     }
@@ -89,6 +102,10 @@ bool ProjectSerializer::loadFromFile(Schema &schema, std::vector<Link>& links, c
             int end = jLink["endPin"].get<int>();
 
             links.push_back(Link(id, start, end));
+
+            if (id >= nextLinkId) {
+                nextLinkId = id + 1;
+            }
         }
     }
 

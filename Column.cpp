@@ -65,3 +65,11 @@ void Column::setIsUnique(bool isUQ) { this->isUnique = isUQ; }
 
 bool Column::getIsAutoIncrement() const { return isAutoIncrement; }
 void Column::setIsAutoIncrement(bool isAI) { this->isAutoIncrement = isAI; }
+
+void Column::restorePins(int inId, int outId) {
+    inputPin.ID = inId;
+    outputPin.ID = outId;
+
+    if (inId >= nextPinId) nextPinId = inId + 1;
+    if (outId >= nextPinId) nextPinId = outId + 1;
+}

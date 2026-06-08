@@ -176,9 +176,10 @@ int main() {
                 if (ImGui::MenuItem("Wczytaj", "Ctrl+O")) {
                     std::string filepath = openLoadFileDialog();
                     if (!filepath.empty()) {
-                        bool success = ProjectSerializer::loadFromFile(mySchema, wszystkieLinki, filepath, nextTableId);
+                        bool success = ProjectSerializer::loadFromFile(mySchema, wszystkieLinki, filepath, nextTableId, nextLinkId);
                         if (success) {
                             std::cout << "Wczytano z: " << filepath << std::endl;
+                            tableCounter = mySchema.getTables().size() + 1;
                         }
                     }
                 }
