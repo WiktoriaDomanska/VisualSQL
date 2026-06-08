@@ -149,6 +149,7 @@ int main() {
     std::string generatedSql = "";
     bool showSqlModal = false;
     bool showMagicWandHelp = false;
+    bool showHelpWindow = false;
     int selectedSqlEngine = 0; // 0 = MySQL, 1 = PostgreSQL
 
     while (!glfwWindowShouldClose(window)) {
@@ -236,6 +237,10 @@ int main() {
             }
 
             if (ImGui::BeginMenu("Help")) {
+                if (ImGui::MenuItem("Instrukcja obslugi")) {
+                    showHelpWindow = true; // Kliknięcie zmienia flagę na true, co otworzy okno
+                }
+
                 if (ImGui::MenuItem("Jak dziala Magiczna Rozdzka?")) {
                     showMagicWandHelp = true;
                 }
@@ -705,6 +710,61 @@ int main() {
             ImGui::End();
         }
 
+        // Instrukcja
+        if (showHelpWindow) {
+            ImGui::SetNextWindowSize(ImVec2(600, 450), ImGuiCond_FirstUseEver);
+
+            if (ImGui::Begin("Instrukcja - VisualSQL", &showHelpWindow)) {
+
+                ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "Witaj w VisualSQL!");
+                ImGui::Separator();
+                ImGui::TextWrapped("VisualSQL to Twoje narzedzie do wizualnego projektowania struktur baz danych.");
+
+                ImGui::Spacing();
+                ImGui::Text("Podstawowa obsluga:");
+
+                ImGui::Indent();
+                ImGui::Bullet();
+                ImGui::SameLine();
+                ImGui::TextWrapped("Dodawanie tabel: Kliknij przycisk '+' w lewym panelu.");
+                ImGui::Bullet();
+                ImGui::SameLine();
+                ImGui::TextWrapped("Edycja tabeli: Kliknij lewym przyciskiem myszy na nazwe tabeli na plotnie.");
+                ImGui::Unindent();
+
+                ImGui::Spacing();
+                ImGui::Text("Zarzadzanie kolumnami:");
+                ImGui::Indent();
+                ImGui::Bullet();
+                ImGui::SameLine();
+                ImGui::TextWrapped("Dodawanie: Uzyj przycisku '+ Dodaj kolumne' w prawym panelu.");
+                ImGui::Bullet();
+                ImGui::SameLine();
+                ImGui::TextWrapped("Edycja: Kliknij nazwe kolumny na liscie w prawym panelu, aby zmienic jej nazwe lub typ.");
+                ImGui::Unindent();
+
+                ImGui::Spacing();
+                ImGui::Text("Relacje:");
+                ImGui::Indent();
+                ImGui::Bullet();
+                ImGui::SameLine();
+                ImGui::TextWrapped("Laczenie: Przeciagnij strzalke (pin) z prawej strony kolumny tabeli zrodlowej "
+                                  "do lewej strony kolumny tabeli docelowej.");
+                ImGui::Bullet();
+                ImGui::SameLine();
+                ImGui::TextWrapped("Usuwanie: Zaznacz polaczenie i wcisnij klawisz Delete.");
+                ImGui::Unindent();
+
+                ImGui::Spacing();
+                ImGui::Separator();
+
+                if (ImGui::Button("Zamknij instrukcje")) {
+                    showHelpWindow = false;
+                }
+            }
+            ImGui::End();
+        }
+
         // Instrukcja obslugi Magicznej Rozdzki
         if (showMagicWandHelp) {
             ImGui::SetNextWindowSize(ImVec2(650, 350), ImGuiCond_FirstUseEver);
@@ -722,9 +782,13 @@ int main() {
                 ImGui::Spacing();
                 ImGui::Text("Konwencja nazewnicza:");
 
-                ImGui::BulletText("Tabela 'Rodzic' musi posiadac klucz glowny (PK).");
-                ImGui::BulletText("Klucz obcy w innej tabeli musi zawierac nazwe tabeli docelowej \n"
-                                  "oraz slowo 'id'.");
+                ImGui::Bullet();
+                ImGui::SameLine();
+                ImGui::TextWrapped("Tabela 'Rodzic' musi posiadac klucz glowny (PK).");
+
+                ImGui::Bullet();
+                ImGui::SameLine();
+                ImGui::TextWrapped("Klucz obcy w innej tabeli musi zawierac nazwe tabeli docelowej oraz slowo 'id'.");
 
                 ImGui::Spacing();
                 ImGui::Text("Przyklady poprawnego nazewnictwa:");
@@ -735,8 +799,12 @@ int main() {
 
                 ImGui::Spacing();
                 ImGui::Text("Ograniczenia:");
-                ImGui::BulletText("Wielkosc liter nie ma znaczenia (id_Klient to to samo co ID_klient).");
-                ImGui::BulletText("Typy danych (np. INT) klucza glownego i obcego musza byc identyczne!");
+                ImGui::Bullet();
+                ImGui::SameLine();
+                ImGui::TextWrapped("Wielkosc liter nie ma znaczenia.");
+                ImGui::Bullet();
+                ImGui::SameLine();
+                ImGui::TextWrapped("Typy danych (np. INT) klucza glownego i obcego musza byc identyczne!");
 
                 ImGui::Spacing();
                 ImGui::Separator();
