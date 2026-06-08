@@ -148,6 +148,7 @@ int main() {
 
     std::string generatedSql = "";
     bool showSqlModal = false;
+    bool showMagicWandHelp = false;
     int selectedSqlEngine = 0; // 0 = MySQL, 1 = PostgreSQL
 
     while (!glfwWindowShouldClose(window)) {
@@ -233,6 +234,13 @@ int main() {
                 }
                 ImGui::EndMenu();
             }
+
+            if (ImGui::BeginMenu("Help")) {
+                if (ImGui::MenuItem("Jak dziala Magiczna Rozdzka?")) {
+                    showMagicWandHelp = true;
+                }
+                ImGui::EndMenu();
+            }
             ImGui::EndMainMenuBar();
         }
 
@@ -265,6 +273,100 @@ int main() {
 
             mySchema.addTable(newTable);
             newTableIdToPlace = newTable.getId();
+        }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        // Magiczna Różdżka
+
+        if (ImGui::Button("Magiczna\nRozdzka", ImVec2(-FLT_MIN, 40))) {
+            ZapiszStan();
+            std::cout << "Start dzialania Magicznej Rozdzki" << std::endl;
+
+            // Pobieramy referencję (&) do wszystkich naszych tabel.
+            std::vector<Table>& tabele = mySchema.getTablesMutable();
+
+            // Bierzemy każdą tabelę i traktujemy ją jako Tabelę A (Rodzica)
+            for (size_t i = 0; i < tabele.size(); ++i) {
+                Table& tabelaA = tabele[i];
+
+                // Szukamy Klucza Głównego (PK) w Tabeli A.
+                Column* kluczGlownyA = nullptr;
+
+                for (size_t c = 0; c < tabelaA.getColumns().size(); ++c) {
+                    if (tabelaA.getColumnsMutable()[c].getIsPrimaryKey()) {
+                        kluczGlownyA = &tabelaA.getColumnsMutable()[c];
+                        break;
+                    }
+                }
+
+                // Jeśli Tabela A nie ma klucza głównego, nie da się z niej wyprowadzić relacji.
+                // Słowo 'continue' każe pętli przeskoczyć do następnej Tabeli A.
+                if (kluczGlownyA == nullptr) continue;
+
+                // Bierzemy każdą inną tabelę jako Tabelę B (Dziecko)
+                for (size_t j = 0; j < tabele.size(); ++j) {
+
+                    if (i == j) continue;
+
+                    Table& tabelaB = tabele[j];
+
+                    std::cout << "Badam czy [" << tabelaB.getName() << "] posiada klucz obcy do [" << tabelaA.getName() << "]" << std::endl;
+
+                    std::cout << "Badam czy [" << tabelaB.getName() << "] posiada klucz obcy do [" << tabelaA.getName() << "]" << std::endl;
+
+                    std::string nazwaTabeliA = tabelaA.getName();
+                    std::string nazwaKluczaA = kluczGlownyA->getName();
+
+                    auto naMaleLitery = [](std::string s) {
+                        std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){ return std::tolower(c); });
+                        return s;
+                    };
+
+                    std::string tabelaALow = naMaleLitery(nazwaTabeliA);
+                    std::string kluczALow = naMaleLitery(nazwaKluczaA);
+
+                    for (size_t c = 0; c < tabelaB.getColumns().size(); ++c) {
+                        Column& kolumnaB = tabelaB.getColumnsMutable()[c];
+
+                        if (kolumnaB.getIsPrimaryKey()) continue;
+
+                        std::string kolumnaBLow = naMaleLitery(kolumnaB.getName());
+
+                        bool czyPasuje = false;
+
+                        // Dokładna nazwa klucza
+                        if (kolumnaBLow == kluczALow) {
+                            czyPasuje = true;
+                        }
+                        // Nazwa tabeli + słowo "id"
+                        else if (kolumnaBLow.find(tabelaALow) != std::string::npos && kolumnaBLow.find("id") != std::string::npos) {
+                            czyPasuje = true;
+                        }
+
+                        if (czyPasuje) {
+                            std::cout << "  -> ZNALEZIONO DOPASOWANIE! Lacze " << nazwaTabeliA << " z " << kolumnaB.getName() << std::endl;
+
+                            bool juzIstnieje = false;
+                            for (const auto& link : wszystkieLinki) {
+                                if (link.StartPinID == kluczGlownyA->getOutputPin().ID && link.EndPinID == kolumnaB.getInputPin().ID) {
+                                    juzIstnieje = true;
+                                    break;
+                                }
+                            }
+
+                            bool zgadzaSieTyp = (kluczGlownyA->getType() == kolumnaB.getType());
+
+                            if (!juzIstnieje && zgadzaSieTyp) {
+                                wszystkieLinki.push_back(Link(nextLinkId++, kluczGlownyA->getOutputPin().ID, kolumnaB.getInputPin().ID));
+                            }
+                        }
+                    }
+                }
+            }
+            std::cout << "Koniec dzialania Magicznej Rozdzki" << std::endl;
         }
 
         ImGui::End();
@@ -400,7 +502,7 @@ int main() {
 
                 } else {
                     // Instrukcja dla użytkownika, gdy nic nie kliknął
-                    ImGui::TextDisabled("Wybierz kolumne z listy powyzej,\naby edytowac jej wlasciwosci.");
+                    ImGui::TextDisabled("Wybierz kolumne z listy powyzej,\n aby edytowac jej wlasciwosci.");
                 }
             }
         }
@@ -598,6 +700,48 @@ int main() {
 
                 if (ImGui::Button("Zamknij")) {
                     showSqlModal = false;
+                }
+            }
+            ImGui::End();
+        }
+
+        // Instrukcja obslugi Magicznej Rozdzki
+        if (showMagicWandHelp) {
+            ImGui::SetNextWindowSize(ImVec2(650, 350), ImGuiCond_FirstUseEver);
+
+            if (ImGui::Begin("Instrukcja - Magiczna Rozdzka", &showMagicWandHelp)) {
+
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "Zasady dzialania Auto-Linkera (Magicznej Rozdzki)");
+                ImGui::Separator();
+                ImGui::Spacing();
+
+                ImGui::TextWrapped("Magiczna Rozdzka to narzedzie, ktore automatycznie analizuje nazwy Twoich tabel "
+                                   "i kolumn, a nastepnie samo rysuje relacje (klucze obce). Aby algorytm zadzialal poprawnie, "
+                                   "musisz trzymac sie prostej konwencji nazewniczej:");
+
+                ImGui::Spacing();
+                ImGui::Text("Konwencja nazewnicza:");
+
+                ImGui::BulletText("Tabela 'Rodzic' musi posiadac klucz glowny (PK).");
+                ImGui::BulletText("Klucz obcy w innej tabeli musi zawierac nazwe tabeli docelowej \n"
+                                  "oraz slowo 'id'.");
+
+                ImGui::Spacing();
+                ImGui::Text("Przyklady poprawnego nazewnictwa:");
+                ImGui::Indent();
+                ImGui::TextColored(ImVec4(0.5f, 1.0f, 0.5f, 1.0f), "Tabela: Uzytkownik -> Kolumna: id_uzytkownik");
+                ImGui::TextColored(ImVec4(0.5f, 1.0f, 0.5f, 1.0f), "Tabela: Klient     -> Kolumna: klient_id");
+                ImGui::Unindent();
+
+                ImGui::Spacing();
+                ImGui::Text("Ograniczenia:");
+                ImGui::BulletText("Wielkosc liter nie ma znaczenia (id_Klient to to samo co ID_klient).");
+                ImGui::BulletText("Typy danych (np. INT) klucza glownego i obcego musza byc identyczne!");
+
+                ImGui::Spacing();
+                ImGui::Separator();
+                if (ImGui::Button("Zrozumialem")) {
+                    showMagicWandHelp = false;
                 }
             }
             ImGui::End();

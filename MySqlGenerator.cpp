@@ -18,6 +18,7 @@ std::string MySqlGenerator::generateSchemaSql(const Schema &schema, const std::v
                              "`(`" + start.column -> getName() + "`)";
                     foreignKeys.push_back(fk);
                 }
+
             }
         }
 
